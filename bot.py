@@ -366,8 +366,6 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             parse_mode="Markdown",
         )
         return
-        )
-        return
 async def audit_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not os.path.exists(AUDIT_FILE):
         await update.message.reply_text("No audit logs yet.")
@@ -415,6 +413,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
