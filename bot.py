@@ -307,7 +307,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    if d.startswith(CB_TOGGLE):
+      if d.startswith(CB_TOGGLE):
         pin = os.getenv(PIN_ENV, "").strip()
         user = update.effective_user
 
@@ -316,6 +316,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await query.answer("Editing disabled (no PIN set).", show_alert=True)
             return
 
+        # Must be unlocked to edit
         if not user or not is_unlocked(user.id):
             await query.answer("Locked. Use /unlock <PIN> to edit.", show_alert=True)
             return
@@ -331,43 +332,35 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await query.answer("Category not found.", show_alert=True)
             return
 
+        changed = False
         for it in cat.get("items", []):
             if it.get("id") == item_id:
                 it["in_service"] = not bool(it.get("in_service"))
                 save_data(data)
                 log_action(user, cat.get("name", ""), it.get("name", ""), it["in_service"])
+                changed = True
                 break
 
-        # Re-load fresh data and re-render same category so keyboard updates immediately
-        data = load_data()
-        cat = find_category(data, cat_id)
-        if not cat:
-            await query.answer("Category not found after update.", show_alert=True)
+        if not changed:
+            await query.answer("Item not found.", show_alert=True)
             return
 
+        # Refresh the SAME category view immediately (smooth update)
         icon = category_status_icon(cat.get("items", []))
+        locked = not is_unlocked(user.id)
 
-        locked = True
-        remaining_line = ""
-        if user:
-            until_ts = cleanup_and_get_until(user.id)
-            if time.time() < until_ts:
-                locked = False
-                rem = format_remaining(until_ts)
-                if rem:
-                    remaining_line = f"\n🕒 {rem} remaining"
-
+        until_ts = cleanup_and_get_until(user.id)
+        rem = format_remaining(until_ts)
+        remaining_line = f"\n🕒 {rem} remaining" if rem else ""
         lock_icon = " 🔒" if locked else ""
+
         text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}"
 
-
-        try:
-            await query.edit_message_reply_markup(
-                reply_markup=build_items_keyboard(cat, allow_toggle=True)
-            )
-        except Exception as e:
-            print("EDIT ERROR:", repr(e))
-
+        await query.edit_message_text(
+            text=text,
+            reply_markup=build_items_keyboard(cat, allow_toggle=True),
+            parse_mode="Markdown",
+        )
         return
 async def audit_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not os.path.exists(AUDIT_FILE):
@@ -416,6 +409,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
