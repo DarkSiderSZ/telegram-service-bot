@@ -36,7 +36,6 @@ DEFAULT_DATA = {
         {"id": "speciality_coffee", "name": "Speciality Coffee", "items": [
             {"id": "v60", "name": "V60", "in_service": True},
             {"id": "cold_brew", "name": "Cold Brew", "in_service": True},
-            {"id": "chemex", "name": "Chemex", "in_service": True},
         ]},
 
         {"id": "hot_drinks", "name": "Hot Drinks", "items": [
@@ -478,6 +477,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
