@@ -360,10 +360,15 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         lock_icon = " 🔒" if locked else ""
         text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}"
 
+       # 1) Update the header text (icon/lock/time)
         await query.edit_message_text(
             text=text,
-            reply_markup=build_items_keyboard(cat, allow_toggle=True),
             parse_mode="Markdown",
+        )
+
+        # 2) Force-refresh the keyboard so ✅/❌ updates instantly
+        await query.edit_message_reply_markup(
+            reply_markup=build_items_keyboard(cat, allow_toggle=True)
         )
         return
 async def audit_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -413,6 +418,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
