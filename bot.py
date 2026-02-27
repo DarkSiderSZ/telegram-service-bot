@@ -301,7 +301,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}"
 
         await query.edit_message_text(
-            text,
+            text=text,
             reply_markup=build_items_keyboard(cat, allow_toggle=True),
             parse_mode="Markdown",
         )
@@ -311,12 +311,10 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         pin = os.getenv(PIN_ENV, "").strip()
         user = update.effective_user
 
-        # Hard lock if no PIN is set
         if not pin:
             await query.answer("Editing disabled (no PIN set).", show_alert=True)
             return
 
-        # Must be unlocked to edit
         if not user or not is_unlocked(user.id):
             await query.answer("Locked. Use /unlock <PIN> to edit.", show_alert=True)
             return
@@ -345,16 +343,12 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await query.answer("Item not found.", show_alert=True)
             return
 
-        # Refresh the SAME category view immediately (smooth update)
+        # Refresh same category view immediately
         icon = category_status_icon(cat.get("items", []))
-        locked = not is_unlocked(user.id)
-
         until_ts = cleanup_and_get_until(user.id)
         rem = format_remaining(until_ts)
         remaining_line = f"\n🕒 {rem} remaining" if rem else ""
-        lock_icon = " 🔒" if locked else ""
-
-        text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}"
+        text = f"{icon} *{cat.get('name','Category')}*{remaining_line}"
 
         await query.edit_message_text(
             text=text,
@@ -409,6 +403,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
