@@ -212,7 +212,12 @@ def category_status_icon(items: List[Dict[str, Any]]) -> str:
     if ins == 0:
         return ICON_ALL_OUT
     return ICON_MIXED
-
+    
+def zws_bump(data: Dict[str, Any]) -> str:
+    # tiny invisible change to force Telegram UI refresh
+    rev = int(data.get("_rev", 0))
+    return "\u200b" * ((rev % 5) + 1)
+    
 def find_category(data: Dict[str, Any], category_id: str):
     for cat in data.get("categories", []):
         if cat.get("id") == category_id:
@@ -406,6 +411,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         for it in cat.get("items", []):
             if it.get("id") == item_id:
                 it["in_service"] = not bool(it.get("in_service"))
+                data["_rev"] = int(data.get("_rev", 0)) + 1
                 save_data(data)
                 log_action(user, cat.get("name", ""), it.get("name", ""), it["in_service"])
                 changed = True
@@ -477,6 +483,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
