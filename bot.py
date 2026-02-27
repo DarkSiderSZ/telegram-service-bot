@@ -12,12 +12,12 @@ from telegram.ext import (
 )
 
 # ========== CONFIG ==========
-DATA_FILE = "/data/service_status.json"   # persisted via Railway volume mounted at /data
+DATA_FILE = "/data/service_status.json"
 AUDIT_FILE = "/data/audit.log"
 
 PIN_ENV = "BOT_PIN"
 AUTH_FILE = "/data/auth.json"
-AUTH_TTL_SECONDS = 24 * 60 * 60  # 24 hours (change if you want)
+AUTH_TTL_SECONDS = 24 * 60 * 60  # 24 hours
 
 ICON_ALL_IN = "✅"
 ICON_ALL_OUT = "❌"
@@ -27,15 +27,17 @@ ICON_OUT = "❌"
 
 CB_CAT = "cat:"       # cat:<category_id>
 CB_BACK = "back"      # back to categories
-CB_TOGGLE = "tog:"    # tog:<category_id>:<item_id>
+CB_TOGGLE = "tog:"    # tog:<category_id>:<item_id>:<rev>
 
 # ========== DEFAULT DATA ==========
 DEFAULT_DATA = {
+    "_rev": 0,
     "categories": [
 
         {"id": "speciality_coffee", "name": "Speciality Coffee", "items": [
             {"id": "v60", "name": "V60", "in_service": True},
             {"id": "cold_brew", "name": "Cold Brew", "in_service": True},
+            {"id": "chemex", "name": "Chemex", "in_service": True},
         ]},
 
         {"id": "hot_drinks", "name": "Hot Drinks", "items": [
@@ -93,13 +95,12 @@ DEFAULT_DATA = {
             {"id": "spanish_matcha", "name": "Spanish Matcha", "in_service": True},
         ]},
 
-        {"id": "milkshake", "name": "Milkshake", "items": [
-            {"id": "oreo_ms", "name": "Oreo MS", "in_service": True},
-            {"id": "pistachio_ms", "name": "Pistachio MS", "in_service": True},
-            {"id": "lotus_ms", "name": "Lotus MS", "in_service": True},
-            {"id": "vanilla_ms", "name": "Vanilla MS", "in_service": True},
-            {"id": "chocolate_ms", "name": "Chocolate MS", "in_service": True},
-            {"id": "strawberry_ms", "name": "Strawberry MS", "in_service": True},
+        {"id": "smoothie", "name": "Smoothie", "items": [
+            {"id": "strawberry_smoothie", "name": "Strawberry Smoothie", "in_service": True},
+            {"id": "blueberry_smoothie", "name": "Blueberry Smoothie", "in_service": True},
+            {"id": "passion_fruit_smoothie", "name": "Passion Fruit Smoothie", "in_service": True},
+            {"id": "mango_smoothie", "name": "Mango Smoothie", "in_service": True},
+            {"id": "peach_smoothie", "name": "Peach Smoothie", "in_service": True},
         ]},
 
         {"id": "mojito", "name": "Mojito", "items": [
@@ -119,21 +120,23 @@ DEFAULT_DATA = {
             {"id": "ultra_scarlet", "name": "Ultra Scarlet", "in_service": True},
         ]},
 
+        {"id": "milkshake", "name": "MilkShake", "items": [
+            {"id": "oreo_ms", "name": "Oreo MS", "in_service": True},
+            {"id": "pistachio_ms", "name": "Pistachio MS", "in_service": True},
+            {"id": "lotus_ms", "name": "Lotus MS", "in_service": True},
+            {"id": "vanilla_ms", "name": "Vanilla MS", "in_service": True},
+            {"id": "chocolate_ms", "name": "Chocolate MS", "in_service": True},
+            {"id": "strawberry_ms", "name": "Strawberry MS", "in_service": True},
+        ]},
+
         {"id": "yogurt", "name": "Yogurt", "items": [
             {"id": "blueberry_yogurt", "name": "Blueberry Yogurt", "in_service": True},
             {"id": "passion_fruit_yogurt", "name": "Passion Fruit Yogurt", "in_service": True},
             {"id": "strawberry_yogurt", "name": "Strawberry Yogurt", "in_service": True},
             {"id": "ultra_yogurt", "name": "Ultra Yogurt", "in_service": True},
+            {"id": "acai_yogurt", "name": "Acai Yogurt", "in_service": True},
         ]},
 
-
-        {"id": "smoothie", "name": "Smoothie", "items": [
-            {"id": "strawberry_smoothie", "name": "Strawberry Smoothie", "in_service": True},
-            {"id": "blueberry_smoothie", "name": "Blueberry Smoothie", "in_service": True},
-            {"id": "passion_fruit_smoothie", "name": "Passion Fruit Smoothie", "in_service": True},
-            {"id": "mango_smoothie", "name": "Mango Smoothie", "in_service": True},
-            {"id": "peach_smoothie", "name": "Peach Smoothie", "in_service": True},
-        ]},
     ]
 }
 
@@ -151,7 +154,7 @@ def save_data(data: Dict[str, Any]) -> None:
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-# ========== AUTH (PIN unlock) ==========
+# ========== AUTH ==========
 def load_auth() -> Dict[str, float]:
     os.makedirs(os.path.dirname(AUTH_FILE), exist_ok=True)
     if not os.path.exists(AUTH_FILE):
@@ -169,16 +172,13 @@ def save_auth(auth: Dict[str, float]) -> None:
         json.dump(auth, f, ensure_ascii=False, indent=2)
 
 def cleanup_and_get_until(user_id: int) -> float:
-    """Returns unlock-until timestamp (epoch seconds) for user_id, after cleaning expired."""
     auth = load_auth()
     now = time.time()
-
     expired = [uid for uid, until in auth.items() if until <= now]
     for uid in expired:
         auth.pop(uid, None)
     if expired:
         save_auth(auth)
-
     return float(auth.get(str(user_id), 0.0))
 
 def is_unlocked(user_id: int) -> bool:
@@ -212,12 +212,7 @@ def category_status_icon(items: List[Dict[str, Any]]) -> str:
     if ins == 0:
         return ICON_ALL_OUT
     return ICON_MIXED
-    
-def zws_bump(data: Dict[str, Any]) -> str:
-    # tiny invisible change to force Telegram UI refresh
-    rev = int(data.get("_rev", 0))
-    return "\u200b" * ((rev % 5) + 1)
-    
+
 def find_category(data: Dict[str, Any], category_id: str):
     for cat in data.get("categories", []):
         if cat.get("id") == category_id:
@@ -232,78 +227,42 @@ def build_categories_keyboard(data: Dict[str, Any]) -> InlineKeyboardMarkup:
         rows.append([InlineKeyboardButton(text=text, callback_data=f"{CB_CAT}{cat['id']}")])
     return InlineKeyboardMarkup(rows)
 
-def build_items_keyboard(cat: Dict[str, Any], allow_toggle: bool) -> InlineKeyboardMarkup:
+def build_items_keyboard(cat: Dict[str, Any], allow_toggle: bool, rev: int = 0) -> InlineKeyboardMarkup:
     rows = []
     for item in cat.get("items", []):
         icon = ICON_IN if item.get("in_service") else ICON_OUT
         label = f"{icon} {item.get('name','Item')}"
-        status = 1 if item.get("in_service") else 0
-        cb = f"{CB_TOGGLE}{cat['id']}:{item['id']}:{status}" if allow_toggle else "noop"
+        if allow_toggle:
+            cb = f"{CB_TOGGLE}{cat['id']}:{item['id']}:{rev}"
+        else:
+            cb = "noop"
         rows.append([InlineKeyboardButton(text=label, callback_data=cb)])
 
     rows.append([InlineKeyboardButton(text="⬅️ Back", callback_data=CB_BACK)])
     return InlineKeyboardMarkup(rows)
 
-
 def log_action(user, category_name: str, item_name: str, new_status: bool) -> None:
     os.makedirs(os.path.dirname(AUDIT_FILE), exist_ok=True)
-
     username = user.username or "no_username"
     full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
     status_text = "IN" if new_status else "OUT"
-
     line = (
         f"{time.strftime('%Y-%m-%d %H:%M:%S')} | "
         f"{full_name} (@{username}, id:{user.id}) | "
         f"{category_name} -> {item_name} -> {status_text}\n"
     )
-
     with open(AUDIT_FILE, "a", encoding="utf-8") as f:
         f.write(line)
-
-    username = user.username or "no_username"
-    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
-    status_text = "IN" if new_status else "OUT"
-
-    line = (
-        f"{time.strftime('%Y-%m-%d %H:%M:%S')} | "
-        f"{full_name} (@{username}, id:{user.id}) | "
-        f"{category_name} -> {item_name} -> {status_text}\n"
-    )
-
-    with open(AUDIT_FILE, "a", encoding="utf-8") as f:
-        f.write(line)
-    rows.append([InlineKeyboardButton(text="⬅️ Back", callback_data=CB_BACK)])
-    return InlineKeyboardMarkup(rows)
 
 # ========== COMMANDS ==========
-async def reset_menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pin = os.getenv(PIN_ENV, "").strip()
-    if not pin:
-        await update.message.reply_text("PIN not set on server.")
-        return
-
-    if not context.args:
-        await update.message.reply_text("Use: /resetmenu <PIN>")
-        return
-
-    if context.args[0].strip() != pin:
-        await update.message.reply_text("Wrong PIN ❌")
-        return
-
-    save_data(DEFAULT_DATA)
-    await update.message.reply_text("Menu reset ✅")
-    
 async def unlock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     pin = os.getenv(PIN_ENV, "").strip()
     if not pin:
         await update.message.reply_text("PIN not set on server.")
         return
-
     if not context.args:
         await update.message.reply_text("Use: /unlock <PIN>")
         return
-
     if context.args[0].strip() == pin:
         user = update.effective_user
         if not user:
@@ -321,6 +280,41 @@ async def lock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if user:
         set_unlocked(user.id, False)
     await update.message.reply_text("Locked 🔒")
+
+async def reset_menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    pin = os.getenv(PIN_ENV, "").strip()
+    if not pin:
+        await update.message.reply_text("PIN not set on server.")
+        return
+    if not context.args:
+        await update.message.reply_text("Use: /resetmenu <PIN>")
+        return
+    if context.args[0].strip() != pin:
+        await update.message.reply_text("Wrong PIN ❌")
+        return
+    save_data(DEFAULT_DATA)
+    await update.message.reply_text("Menu reset ✅")
+
+async def audit_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not os.path.exists(AUDIT_FILE):
+        await update.message.reply_text("No audit logs yet.")
+        return
+    limit = 10
+    if context.args:
+        try:
+            limit = max(1, min(100, int(context.args[0])))
+        except ValueError:
+            pass
+    with open(AUDIT_FILE, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    if not lines:
+        await update.message.reply_text("No audit logs yet.")
+        return
+    last_lines = lines[-limit:]
+    text = "".join(last_lines)
+    if len(text) > 4000:
+        text = text[-4000:]
+    await update.message.reply_text(f"📜 Last {len(last_lines)} changes:\n\n{text}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
@@ -362,7 +356,6 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
         locked = True
         remaining_line = ""
-
         if user:
             until_ts = cleanup_and_get_until(user.id)
             if time.time() < until_ts:
@@ -372,16 +365,18 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     remaining_line = f"\n🕒 {rem} remaining"
 
         lock_icon = " 🔒" if locked else ""
-        text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}{zws_bump(data)}"
+        text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}"
+
+        rev = int(data.get("_rev", 0))
 
         await query.edit_message_text(
             text=text,
-            reply_markup=build_items_keyboard(cat, allow_toggle=True),
+            reply_markup=build_items_keyboard(cat, allow_toggle=True, rev=rev),
             parse_mode="Markdown",
         )
         return
 
-        if d.startswith(CB_TOGGLE):
+    if d.startswith(CB_TOGGLE):
         pin = os.getenv(PIN_ENV, "").strip()
         user = update.effective_user
 
@@ -393,7 +388,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await query.answer("Locked. Use /unlock <PIN> to edit.", show_alert=True)
             return
 
-        payload = d[len(CB_TOGGLE):]  # <cat_id>:<item_id>[:rev]
+        payload = d[len(CB_TOGGLE):]  # <cat_id>:<item_id>:<rev>
         parts = payload.split(":")
         if len(parts) < 2:
             await query.answer("Bad data.", show_alert=True)
@@ -407,7 +402,6 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await query.answer("Category not found.", show_alert=True)
             return
 
-        # Toggle item
         target = None
         for it in cat.get("items", []):
             if it.get("id") == item_id:
@@ -419,19 +413,14 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
         target["in_service"] = not bool(target.get("in_service"))
-
-        # bump revision so keyboard callback_data changes (forces Telegram redraw)
         data["_rev"] = int(data.get("_rev", 0)) + 1
-
         save_data(data)
         log_action(user, cat.get("name", ""), target.get("name", ""), target["in_service"])
 
-        # Render same category view again (fast + reliable refresh)
         icon = category_status_icon(cat.get("items", []))
         until_ts = cleanup_and_get_until(user.id)
         rem = format_remaining(until_ts)
         remaining_line = f"\n🕒 {rem} remaining" if rem else ""
-
         text = f"{icon} *{cat.get('name','Category')}*{remaining_line}"
 
         rev = int(data.get("_rev", 0))
@@ -442,41 +431,13 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             parse_mode="Markdown",
         )
         return
-async def audit_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not os.path.exists(AUDIT_FILE):
-        await update.message.reply_text("No audit logs yet.")
-        return
 
-    # default = 10 lines
-    limit = 10
-    if context.args:
-        try:
-            limit = max(1, min(100, int(context.args[0])))
-        except ValueError:
-            pass
-
-    with open(AUDIT_FILE, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-
-    if not lines:
-        await update.message.reply_text("No audit logs yet.")
-        return
-
-    last_lines = lines[-limit:]
-    text = "".join(last_lines)
-
-    # Telegram max message length safety
-    if len(text) > 4000:
-        text = text[-4000:]
-
-    await update.message.reply_text(f"📜 Last {len(last_lines)} changes:\n\n{text}")
 def main() -> None:
     token = os.getenv("BOT_TOKEN")
     if not token:
         raise RuntimeError("Missing BOT_TOKEN environment variable.")
 
     app = ApplicationBuilder().token(token).build()
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("unlock", unlock_cmd))
@@ -490,32 +451,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
