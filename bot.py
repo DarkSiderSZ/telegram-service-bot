@@ -429,7 +429,9 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         remaining_line = f"\n🕒 {rem} remaining" if rem else ""
         text = f"{icon} *{cat.get('name','Category')}*{remaining_line}{zws_bump(data)}"
 
-        await query.edit_message_text(
+        await query.delete_message()
+
+        await query.message.chat.send_message(
             text=text,
             reply_markup=build_items_keyboard(cat, allow_toggle=True),
             parse_mode="Markdown",
@@ -483,6 +485,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
