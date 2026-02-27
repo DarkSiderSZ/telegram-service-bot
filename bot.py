@@ -1,3 +1,4 @@
+import time
 import json
 import os
 from typing import Dict, Any, List
@@ -12,6 +13,9 @@ from telegram.ext import (
 
 # ========== CONFIG ==========
 DATA_FILE = "/data/service_status.json"
+PIN_ENV = "BOT_PIN"
+AUTH_FILE = "/data/auth.json"
+AUTH_TTL_SECONDS = 24 * 60 * 60  # 8 hours
 
 # Put your Telegram numeric user id(s) here to enable tap-to-toggle.
 # Get it by messaging @userinfobot on Telegram.
@@ -26,6 +30,7 @@ ICON_OUT = "❌"
 CB_CAT = "cat:"       # cat:<category_id>
 CB_BACK = "back"      # back to categories
 CB_TOGGLE = "tog:"    # tog:<category_id>:<item_id>
+
 
 # ========== DEFAULT DATA (YOUR CATEGORIES) ==========
 # Edit the items later, or the bot will create service_status.json you can edit.
@@ -86,6 +91,7 @@ DEFAULT_DATA = {
     ]
 }
 
+
 # ========== STORAGE ==========
 def load_data() -> Dict[str, Any]:
     if not os.path.exists(DATA_FILE):
@@ -140,8 +146,62 @@ def build_items_keyboard(cat: Dict[str, Any], allow_toggle: bool) -> InlineKeybo
 
     rows.append([InlineKeyboardButton(text="⬅️ Back", callback_data=CB_BACK)])
     return InlineKeyboardMarkup(rows)
+def load_auth() -> Dict[str, float]:
+    if not os.path.exists(AUTH_FILE):
+        return {}
+    try:
+        with open(AUTH_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            # ensure floats
+            return {str(k): float(v) for k, v in data.items()}
+    except Exception:
+        return {}
+
+def save_auth(auth: Dict[str, float]) -> None:
+    os.makedirs(os.path.dirname(AUTH_FILE), exist_ok=True)
+    with open(AUTH_FILE, "w", encoding="utf-8") as f:
+        json.dump(auth, f, ensure_ascii=False, indent=2)
+
+def is_unlocked(user_id: int) -> bool:
+    auth = load_auth()
+    now = time.time()
+    # cleanup expired
+    expired = [uid for uid, until in auth.items() if until <= now]
+    for uid in expired:
+        auth.pop(uid, None)
+    if expired:
+        save_auth(auth)
+    return now < auth.get(str(user_id), 0.0)
+
+def set_unlocked(user_id: int, unlocked: bool) -> None:
+    auth = load_auth()
+    if unlocked:
+        auth[str(user_id)] = time.time() + AUTH_TTL_SECONDS
+    else:
+        auth.pop(str(user_id), None)
+    save_auth(auth)    
 
 # ========== HANDLERS ==========
+async def unlock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    pin = os.getenv(PIN_ENV, "")
+    if not pin:
+        await update.message.reply_text("PIN not set on server.")
+        return
+
+    if not context.args:
+        await update.message.reply_text("Use: /unlock <PIN>")
+        return
+
+    if context.args[0] == pin:
+        set_unlocked(update.effective_user.id, True)
+        await update.message.reply_text("Unlocked ✅ You can toggle items now.")
+    else:
+        await update.message.reply_text("Wrong PIN ❌")
+
+async def lock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    set_unlocked(update.effective_user.id, False)
+    await update.message.reply_text("Locked 🔒")
+    
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
     await update.message.reply_text("Choose a category:", reply_markup=build_categories_keyboard(data))
@@ -178,7 +238,10 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     if d.startswith(CB_TOGGLE):
-
+user = update.effective_user
+if not user or not is_unlocked(user.id):
+    await query.answer("Locked. Use /unlock <PIN> to edit.", show_alert=True)
+    return
         payload = d[len(CB_TOGGLE):]  # <cat_id>:<item_id>
         if ":" not in payload:
             await query.answer("Bad data.", show_alert=True)
@@ -216,6 +279,8 @@ def main() -> None:
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("unlock", unlock_cmd))
+    app.add_handler(CommandHandler("lock", lock_cmd))
     app.add_handler(CallbackQueryHandler(on_button))
 
     print("Bot running... Ctrl+C to stop.")
@@ -224,4 +289,5 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
