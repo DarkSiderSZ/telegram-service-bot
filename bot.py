@@ -326,6 +326,7 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "/start - categories\n"
         "/unlock <PIN> - enable editing\n"
         "/lock - disable editing\n"
+        "/Audit - display edit History (Max 100, specify if needed)\n"
         "/help - help\n"
     )
 
@@ -476,6 +477,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
