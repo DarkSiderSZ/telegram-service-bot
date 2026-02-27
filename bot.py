@@ -361,7 +361,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}"
 
 
-              try:
+        try:
             await query.edit_message_reply_markup(
                 reply_markup=build_items_keyboard(cat, allow_toggle=True)
             )
@@ -416,6 +416,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
