@@ -236,7 +236,8 @@ def build_items_keyboard(cat: Dict[str, Any], allow_toggle: bool) -> InlineKeybo
     for item in cat.get("items", []):
         icon = ICON_IN if item.get("in_service") else ICON_OUT
         label = f"{icon} {item.get('name','Item')}"
-        cb = f"{CB_TOGGLE}{cat['id']}:{item['id']}" if allow_toggle else "noop"
+        status = 1 if item.get("in_service") else 0
+        cb = f"{CB_TOGGLE}{cat['id']}:{item['id']}:{status}" if allow_toggle else "noop"
         rows.append([InlineKeyboardButton(text=label, callback_data=cb)])
 
     rows.append([InlineKeyboardButton(text="⬅️ Back", callback_data=CB_BACK)])
@@ -460,6 +461,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
