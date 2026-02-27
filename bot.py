@@ -12,14 +12,11 @@ from telegram.ext import (
 )
 
 # ========== CONFIG ==========
-DATA_FILE = "/data/service_status.json"
+DATA_FILE = "/data/service_status.json"   # persisted via Railway volume mounted at /data
+
 PIN_ENV = "BOT_PIN"
 AUTH_FILE = "/data/auth.json"
-AUTH_TTL_SECONDS = 24 * 60 * 60  # 8 hours
-
-# Put your Telegram numeric user id(s) here to enable tap-to-toggle.
-# Get it by messaging @userinfobot on Telegram.
-ADMIN_USER_IDS = {123456789}  # <-- change this (or set() to disable toggling)
+AUTH_TTL_SECONDS = 24 * 60 * 60  # 24 hours (change if you want)
 
 ICON_ALL_IN = "✅"
 ICON_ALL_OUT = "❌"
@@ -31,9 +28,7 @@ CB_CAT = "cat:"       # cat:<category_id>
 CB_BACK = "back"      # back to categories
 CB_TOGGLE = "tog:"    # tog:<category_id>:<item_id>
 
-
-# ========== DEFAULT DATA (YOUR CATEGORIES) ==========
-# Edit the items later, or the bot will create service_status.json you can edit.
+# ========== DEFAULT DATA ==========
 DEFAULT_DATA = {
     "categories": [
         {"id": "deserts", "name": "Deserts", "items": [
@@ -91,9 +86,9 @@ DEFAULT_DATA = {
     ]
 }
 
-
 # ========== STORAGE ==========
 def load_data() -> Dict[str, Any]:
+    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     if not os.path.exists(DATA_FILE):
         save_data(DEFAULT_DATA)
         return DEFAULT_DATA
@@ -101,8 +96,60 @@ def load_data() -> Dict[str, Any]:
         return json.load(f)
 
 def save_data(data: Dict[str, Any]) -> None:
+    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+# ========== AUTH (PIN unlock) ==========
+def load_auth() -> Dict[str, float]:
+    os.makedirs(os.path.dirname(AUTH_FILE), exist_ok=True)
+    if not os.path.exists(AUTH_FILE):
+        return {}
+    try:
+        with open(AUTH_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return {str(k): float(v) for k, v in data.items()}
+    except Exception:
+        return {}
+
+def save_auth(auth: Dict[str, float]) -> None:
+    os.makedirs(os.path.dirname(AUTH_FILE), exist_ok=True)
+    with open(AUTH_FILE, "w", encoding="utf-8") as f:
+        json.dump(auth, f, ensure_ascii=False, indent=2)
+
+def cleanup_and_get_until(user_id: int) -> float:
+    """Returns unlock-until timestamp (epoch seconds) for user_id, after cleaning expired."""
+    auth = load_auth()
+    now = time.time()
+
+    expired = [uid for uid, until in auth.items() if until <= now]
+    for uid in expired:
+        auth.pop(uid, None)
+    if expired:
+        save_auth(auth)
+
+    return float(auth.get(str(user_id), 0.0))
+
+def is_unlocked(user_id: int) -> bool:
+    return time.time() < cleanup_and_get_until(user_id)
+
+def set_unlocked(user_id: int, unlocked: bool) -> None:
+    auth = load_auth()
+    if unlocked:
+        auth[str(user_id)] = time.time() + AUTH_TTL_SECONDS
+    else:
+        auth.pop(str(user_id), None)
+    save_auth(auth)
+
+def format_remaining(until_ts: float) -> str:
+    remaining = int(until_ts - time.time())
+    if remaining <= 0:
+        return ""
+    hours = remaining // 3600
+    minutes = (remaining % 3600) // 60
+    if hours > 0:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m"
 
 # ========== HELPERS ==========
 def category_status_icon(items: List[Dict[str, Any]]) -> str:
@@ -121,10 +168,6 @@ def find_category(data: Dict[str, Any], category_id: str):
             return cat
     return None
 
-def is_admin(update: Update) -> bool:
-    user = update.effective_user
-    return bool(user and user.id in ADMIN_USER_IDS)
-
 def build_categories_keyboard(data: Dict[str, Any]) -> InlineKeyboardMarkup:
     rows = []
     for cat in data.get("categories", []):
@@ -138,52 +181,15 @@ def build_items_keyboard(cat: Dict[str, Any], allow_toggle: bool) -> InlineKeybo
     for item in cat.get("items", []):
         icon = ICON_IN if item.get("in_service") else ICON_OUT
         label = f"{icon} {item.get('name','Item')}"
-        if allow_toggle:
-            cb = f"{CB_TOGGLE}{cat['id']}:{item['id']}"
-        else:
-            cb = "noop"
+        cb = f"{CB_TOGGLE}{cat['id']}:{item['id']}" if allow_toggle else "noop"
         rows.append([InlineKeyboardButton(text=label, callback_data=cb)])
 
     rows.append([InlineKeyboardButton(text="⬅️ Back", callback_data=CB_BACK)])
     return InlineKeyboardMarkup(rows)
-def load_auth() -> Dict[str, float]:
-    if not os.path.exists(AUTH_FILE):
-        return {}
-    try:
-        with open(AUTH_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            # ensure floats
-            return {str(k): float(v) for k, v in data.items()}
-    except Exception:
-        return {}
 
-def save_auth(auth: Dict[str, float]) -> None:
-    os.makedirs(os.path.dirname(AUTH_FILE), exist_ok=True)
-    with open(AUTH_FILE, "w", encoding="utf-8") as f:
-        json.dump(auth, f, ensure_ascii=False, indent=2)
-
-def is_unlocked(user_id: int) -> bool:
-    auth = load_auth()
-    now = time.time()
-    # cleanup expired
-    expired = [uid for uid, until in auth.items() if until <= now]
-    for uid in expired:
-        auth.pop(uid, None)
-    if expired:
-        save_auth(auth)
-    return now < auth.get(str(user_id), 0.0)
-
-def set_unlocked(user_id: int, unlocked: bool) -> None:
-    auth = load_auth()
-    if unlocked:
-        auth[str(user_id)] = time.time() + AUTH_TTL_SECONDS
-    else:
-        auth.pop(str(user_id), None)
-    save_auth(auth)    
-
-# ========== HANDLERS ==========
+# ========== COMMANDS ==========
 async def unlock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pin = os.getenv(PIN_ENV, "")
+    pin = os.getenv(PIN_ENV, "").strip()
     if not pin:
         await update.message.reply_text("PIN not set on server.")
         return
@@ -192,20 +198,37 @@ async def unlock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text("Use: /unlock <PIN>")
         return
 
-    if context.args[0] == pin:
-        set_unlocked(update.effective_user.id, True)
-        await update.message.reply_text("Unlocked ✅ You can toggle items now.")
+    if context.args[0].strip() == pin:
+        user = update.effective_user
+        if not user:
+            await update.message.reply_text("Could not identify user.")
+            return
+        set_unlocked(user.id, True)
+        until_ts = cleanup_and_get_until(user.id)
+        rem = format_remaining(until_ts)
+        await update.message.reply_text(f"Unlocked ✅ ({rem} remaining)")
     else:
         await update.message.reply_text("Wrong PIN ❌")
 
 async def lock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    set_unlocked(update.effective_user.id, False)
+    user = update.effective_user
+    if user:
+        set_unlocked(user.id, False)
     await update.message.reply_text("Locked 🔒")
-    
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
     await update.message.reply_text("Choose a category:", reply_markup=build_categories_keyboard(data))
 
+async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        "/start - categories\n"
+        "/unlock <PIN> - enable editing\n"
+        "/lock - disable editing\n"
+        "/help - help\n"
+    )
+
+# ========== BUTTON HANDLER ==========
 async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
@@ -226,14 +249,24 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not cat:
             await query.edit_message_text("Category not found.")
             return
+
         icon = category_status_icon(cat.get("items", []))
+
         user = update.effective_user
-        locked = not user or not is_unlocked(user.id)
+        locked = True
+        remaining_line = ""
+
+        if user:
+            until_ts = cleanup_and_get_until(user.id)
+            if time.time() < until_ts:
+                locked = False
+                rem = format_remaining(until_ts)
+                if rem:
+                    remaining_line = f"\n🕒 {rem} remaining"
 
         lock_icon = " 🔒" if locked else ""
-        text = f"{icon} *{cat.get('name','Category')}*{lock_icon}"
-        if is_admin(update):
-            text += "\nTap an item to toggle."
+        text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}"
+
         await query.edit_message_text(
             text,
             reply_markup=build_items_keyboard(cat, allow_toggle=True),
@@ -242,7 +275,14 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     if d.startswith(CB_TOGGLE):
+        pin = os.getenv(PIN_ENV, "").strip()
         user = update.effective_user
+
+        # Hard lock if no PIN is set
+        if not pin:
+            await query.answer("Editing disabled (no PIN set).", show_alert=True)
+            return
+
         if not user or not is_unlocked(user.id):
             await query.answer("Locked. Use /unlock <PIN> to edit.", show_alert=True)
             return
@@ -264,16 +304,19 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 save_data(data)
                 break
 
+        # refresh category screen after toggle (also show lock + remaining)
         icon = category_status_icon(cat.get("items", []))
-        text = f"{icon} *{cat.get('name','Category')}*"
+        until_ts = cleanup_and_get_until(user.id)
+        rem = format_remaining(until_ts)
+        remaining_line = f"\n🕒 {rem} remaining" if rem else ""
+        text = f"{icon} *{cat.get('name','Category')}*{remaining_line}"
+
         await query.edit_message_text(
             text,
             reply_markup=build_items_keyboard(cat, allow_toggle=True),
             parse_mode="Markdown",
         )
         return
-async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("/start - categories\n/help - help\n")
 
 def main() -> None:
     token = os.getenv("BOT_TOKEN")
@@ -281,6 +324,7 @@ def main() -> None:
         raise RuntimeError("Missing BOT_TOKEN environment variable.")
 
     app = ApplicationBuilder().token(token).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("unlock", unlock_cmd))
@@ -291,10 +335,4 @@ def main() -> None:
     app.run_polling()
 
 if __name__ == "__main__":
-
     main()
-
-
-
-
-
