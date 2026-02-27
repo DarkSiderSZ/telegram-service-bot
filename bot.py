@@ -11,7 +11,7 @@ from telegram.ext import (
 )
 
 # ========== CONFIG ==========
-DATA_FILE = "service_status.json"
+DATA_FILE = "/data/service_status.json"
 
 # Put your Telegram numeric user id(s) here to enable tap-to-toggle.
 # Get it by messaging @userinfobot on Telegram.
@@ -225,4 +225,5 @@ def main() -> None:
     app.run_polling()
 
 if __name__ == "__main__":
+
     main()
