@@ -361,9 +361,13 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}"
 
 
-        await query.edit_message_reply_markup(
-            reply_markup=build_items_keyboard(cat, allow_toggle=True)
-        )
+              try:
+            await query.edit_message_reply_markup(
+                reply_markup=build_items_keyboard(cat, allow_toggle=True)
+            )
+        except Exception as e:
+            print("EDIT ERROR:", repr(e))
+
         return
 async def audit_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not os.path.exists(AUDIT_FILE):
@@ -412,6 +416,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
