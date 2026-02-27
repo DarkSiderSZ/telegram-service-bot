@@ -377,10 +377,10 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if ":" not in payload:
             await query.answer("Bad data.", show_alert=True)
             return
-       parts = payload.split(":")
-       cat_id = parts[0]
-       item_id = parts[1] if len(parts) > 1 else ""
-       # parts[2] is status, we ignore it
+        parts = payload.split(":")
+        cat_id = parts[0]
+        item_id = parts[1] if len(parts) > 1 else ""
+        # parts[2] is status, we ignore it
 
         cat = find_category(data, cat_id)
         if not cat:
@@ -460,6 +460,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
