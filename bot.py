@@ -237,11 +237,12 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-if d.startswith(CB_TOGGLE):
-    user = update.effective_user
-    if not user or not is_unlocked(user.id):
-        await query.answer("Locked. Use /unlock <PIN> to edit.", show_alert=True)
-        return
+    if d.startswith(CB_TOGGLE):
+        user = update.effective_user
+        if not user or not is_unlocked(user.id):
+            await query.answer("Locked. Use /unlock <PIN> to edit.", show_alert=True)
+            return
+
         payload = d[len(CB_TOGGLE):]  # <cat_id>:<item_id>
         if ":" not in payload:
             await query.answer("Bad data.", show_alert=True)
@@ -259,15 +260,14 @@ if d.startswith(CB_TOGGLE):
                 save_data(data)
                 break
 
-        # refresh
         icon = category_status_icon(cat.get("items", []))
-        text = f"{icon} *{cat.get('name','Category')}*\nTap an item to toggle."
+        text = f"{icon} *{cat.get('name','Category')}*"
         await query.edit_message_text(
             text,
             reply_markup=build_items_keyboard(cat, allow_toggle=True),
             parse_mode="Markdown",
         )
-
+        return
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("/start - categories\n/help - help\n")
 
@@ -289,6 +289,7 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
 
 
