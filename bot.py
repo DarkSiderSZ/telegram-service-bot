@@ -372,7 +372,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     remaining_line = f"\n🕒 {rem} remaining"
 
         lock_icon = " 🔒" if locked else ""
-        text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}"
+        text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}{zws_bump(data)}"
 
         await query.edit_message_text(
             text=text,
@@ -483,6 +483,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
