@@ -338,17 +338,35 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 log_action(user, cat.get("name",""), it.get("name",""), it["in_service"])
                 break
 
-        # refresh category screen after toggle (also show lock + remaining)
+        # Re-load fresh data from disk (volume) so UI always reflects the latest state
+        data = load_data()
+        cat = find_category(data, cat_id)
+        if not cat:
+            await query.answer("Category not found after update.", show_alert=True)
+            return
+
         icon = category_status_icon(cat.get("items", []))
-        until_ts = cleanup_and_get_until(user.id)
-        rem = format_remaining(until_ts)
-        remaining_line = f"\n🕒 {rem} remaining" if rem else ""
-        text = f"{icon} *{cat.get('name','Category')}*{remaining_line}"
+
+        # keep the same lock/time display you already have in CB_CAT
+        locked = True
+        remaining_line = ""
+        if user:
+            until_ts = cleanup_and_get_until(user.id)
+            if time.time() < until_ts:
+                locked = False
+                rem = format_remaining(until_ts)
+                if rem:
+                    remaining_line = f"\n🕒 {rem} remaining"
+
+        lock_icon = " 🔒" if locked else ""
+        text = f"{icon} *{cat.get('name','Category')}*{lock_icon}{remaining_line}"
 
         await query.edit_message_text(
-            text,
+            text=text,
             reply_markup=build_items_keyboard(cat, allow_toggle=True),
             parse_mode="Markdown",
+        )
+        return
         )
         return
 async def audit_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -398,5 +416,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
