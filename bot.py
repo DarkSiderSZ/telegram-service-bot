@@ -427,7 +427,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         until_ts = cleanup_and_get_until(user.id)
         rem = format_remaining(until_ts)
         remaining_line = f"\n🕒 {rem} remaining" if rem else ""
-        text = f"{icon} *{cat.get('name','Category')}*{remaining_line}"
+        text = f"{icon} *{cat.get('name','Category')}*{remaining_line}{zws_bump(data)}"
 
         await query.edit_message_text(
             text=text,
@@ -483,6 +483,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
