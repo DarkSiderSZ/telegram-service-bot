@@ -335,10 +335,10 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             if it.get("id") == item_id:
                 it["in_service"] = not bool(it.get("in_service"))
                 save_data(data)
-                log_action(user, cat.get("name",""), it.get("name",""), it["in_service"])
+                log_action(user, cat.get("name", ""), it.get("name", ""), it["in_service"])
                 break
 
-        # Re-load fresh data from disk (volume) so UI always reflects the latest state
+        # Re-load fresh data and re-render same category so keyboard updates immediately
         data = load_data()
         cat = find_category(data, cat_id)
         if not cat:
@@ -347,7 +347,6 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         icon = category_status_icon(cat.get("items", []))
 
-        # keep the same lock/time display you already have in CB_CAT
         locked = True
         remaining_line = ""
         if user:
@@ -416,6 +415,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
