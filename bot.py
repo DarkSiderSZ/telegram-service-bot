@@ -172,15 +172,12 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             text += "\nTap an item to toggle."
         await query.edit_message_text(
             text,
-            reply_markup=build_items_keyboard(cat, allow_toggle=is_admin(update)),
+            reply_markup=build_items_keyboard(cat, allow_toggle=True),
             parse_mode="Markdown",
         )
         return
 
     if d.startswith(CB_TOGGLE):
-        if not is_admin(update):
-            await query.answer("Not allowed.", show_alert=True)
-            return
 
         payload = d[len(CB_TOGGLE):]  # <cat_id>:<item_id>
         if ":" not in payload:
@@ -227,3 +224,4 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
