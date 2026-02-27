@@ -37,7 +37,6 @@ DEFAULT_DATA = {
         {"id": "speciality_coffee", "name": "Speciality Coffee", "items": [
             {"id": "v60", "name": "V60", "in_service": True},
             {"id": "cold_brew", "name": "Cold Brew", "in_service": True},
-            {"id": "chemex", "name": "Chemex", "in_service": True},
         ]},
 
         {"id": "hot_drinks", "name": "Hot Drinks", "items": [
@@ -134,7 +133,6 @@ DEFAULT_DATA = {
             {"id": "passion_fruit_yogurt", "name": "Passion Fruit Yogurt", "in_service": True},
             {"id": "strawberry_yogurt", "name": "Strawberry Yogurt", "in_service": True},
             {"id": "ultra_yogurt", "name": "Ultra Yogurt", "in_service": True},
-            {"id": "acai_yogurt", "name": "Acai Yogurt", "in_service": True},
         ]},
 
     ]
@@ -451,3 +449,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
