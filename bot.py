@@ -32,57 +32,111 @@ CB_TOGGLE = "tog:"    # tog:<category_id>:<item_id>
 # ========== DEFAULT DATA ==========
 DEFAULT_DATA = {
     "categories": [
-        {"id": "deserts", "name": "Deserts", "items": [
-            {"id": "cheesecake", "name": "Cheesecake", "in_service": True},
-            {"id": "brownie", "name": "Brownie", "in_service": True},
-        ]},
+        {"id": "deserts", "name": "Deserts", "items": []},
+
         {"id": "speciality_coffee", "name": "Speciality Coffee", "items": [
             {"id": "v60", "name": "V60", "in_service": True},
-            {"id": "aeropress", "name": "AeroPress", "in_service": True},
+            {"id": "cold_brew", "name": "Cold Brew", "in_service": True},
+            {"id": "chemex", "name": "Chemex", "in_service": True},
         ]},
+
         {"id": "hot_drinks", "name": "Hot Drinks", "items": [
+            {"id": "ristretto", "name": "Ristretto", "in_service": True},
+            {"id": "espresso_single", "name": "Espresso Single", "in_service": True},
+            {"id": "espresso_double", "name": "Espresso Double", "in_service": True},
+            {"id": "espresso_lungo", "name": "Espresso Lungo", "in_service": True},
+            {"id": "espresso_con_panna", "name": "Espresso Con Panna", "in_service": True},
+            {"id": "espresso_macchiato", "name": "Espresso Macchiato", "in_service": True},
+            {"id": "espresso_sweet", "name": "Espresso Sweet", "in_service": True},
+            {"id": "espresso_affogato", "name": "Espresso Affogato", "in_service": True},
+            {"id": "cappuccino", "name": "Cappuccino", "in_service": True},
+            {"id": "latte", "name": "Latte", "in_service": True},
+            {"id": "dark_chocolate_mocha", "name": "Dark Chocolate Mocha", "in_service": True},
+            {"id": "white_chocolate_mocha", "name": "White Chocolate Mocha", "in_service": True},
+            {"id": "caramel_mocha", "name": "Caramel Mocha", "in_service": True},
+            {"id": "spanish_latte", "name": "Spanish Latte", "in_service": True},
+            {"id": "pistachio_latte", "name": "Pistachio Latte", "in_service": True},
+            {"id": "strawberry_latte", "name": "Strawberry Latte", "in_service": True},
+            {"id": "flat_white", "name": "Flat White", "in_service": True},
+            {"id": "cortado", "name": "Cortado", "in_service": True},
             {"id": "americano", "name": "Americano", "in_service": True},
+            {"id": "turkish_coffee", "name": "Turkish Coffee", "in_service": True},
             {"id": "hot_chocolate", "name": "Hot Chocolate", "in_service": True},
         ]},
+
         {"id": "iced_coffee", "name": "Iced Coffee", "items": [
-            {"id": "iced_americano", "name": "Iced Americano", "in_service": True},
-            {"id": "iced_latte", "name": "Iced Latte", "in_service": True},
+            {"id": "ice_latte", "name": "Ice Latte", "in_service": True},
+            {"id": "ice_cappuccino", "name": "Ice Cappuccino", "in_service": True},
+            {"id": "ice_pistachio_latte", "name": "Ice Pistachio Latte", "in_service": True},
+            {"id": "ice_spanish_latte", "name": "Ice Spanish Latte", "in_service": True},
+            {"id": "ice_mocha", "name": "Ice Mocha", "in_service": True},
+            {"id": "ice_americano", "name": "Ice Americano", "in_service": True},
+            {"id": "ice_chocolate", "name": "Ice Chocolate", "in_service": True},
         ]},
+
         {"id": "iced_tea", "name": "Iced Tea", "items": [
-            {"id": "lemon_iced_tea", "name": "Lemon Iced Tea", "in_service": True},
             {"id": "peach_iced_tea", "name": "Peach Iced Tea", "in_service": True},
+            {"id": "strawberry_iced_tea", "name": "Strawberry Iced Tea", "in_service": True},
+            {"id": "blueberry_iced_tea", "name": "Blueberry Iced Tea", "in_service": True},
+            {"id": "lemon_iced_tea", "name": "Lemon Iced Tea", "in_service": True},
         ]},
+
         {"id": "frappuccino", "name": "Frappuccino", "items": [
-            {"id": "coffee_frappe", "name": "Coffee Frappe", "in_service": True},
-            {"id": "caramel_frappe", "name": "Caramel Frappe", "in_service": True},
+            {"id": "mocha_frappuccino", "name": "Mocha Frappuccino", "in_service": True},
+            {"id": "pistachio_frappuccino", "name": "Pistachio Frappuccino", "in_service": True},
+            {"id": "caramel_frappuccino", "name": "Caramel Frappuccino", "in_service": True},
+            {"id": "vanilla_frappuccino", "name": "Vanilla Frappuccino", "in_service": True},
+            {"id": "ultra_frappuccino", "name": "Ultra Frappuccino", "in_service": True},
         ]},
+
         {"id": "matcha", "name": "Matcha", "items": [
             {"id": "matcha_latte", "name": "Matcha Latte", "in_service": True},
-            {"id": "iced_matcha", "name": "Iced Matcha", "in_service": True},
+            {"id": "vanilla_matcha", "name": "Vanilla Matcha", "in_service": True},
+            {"id": "spanish_matcha", "name": "Spanish Matcha", "in_service": True},
         ]},
+
         {"id": "milkshake", "name": "Milkshake", "items": [
-            {"id": "vanilla_milkshake", "name": "Vanilla", "in_service": True},
-            {"id": "oreo_milkshake", "name": "Oreo", "in_service": True},
+            {"id": "oreo_ms", "name": "Oreo MS", "in_service": True},
+            {"id": "pistachio_ms", "name": "Pistachio MS", "in_service": True},
+            {"id": "lotus_ms", "name": "Lotus MS", "in_service": True},
+            {"id": "vanilla_ms", "name": "Vanilla MS", "in_service": True},
+            {"id": "chocolate_ms", "name": "Chocolate MS", "in_service": True},
+            {"id": "strawberry_ms", "name": "Strawberry MS", "in_service": True},
         ]},
+
         {"id": "mojito", "name": "Mojito", "items": [
-            {"id": "classic_mojito", "name": "Classic", "in_service": True},
-            {"id": "strawberry_mojito", "name": "Strawberry", "in_service": True},
+            {"id": "lemon_mint_mojito", "name": "Lemon and Mint Mojito", "in_service": True},
+            {"id": "blue_mojito", "name": "Blue Mojito", "in_service": True},
+            {"id": "strawberry_mojito", "name": "Strawberry Mojito", "in_service": True},
+            {"id": "passion_fruit_mojito", "name": "Passion Fruit Mojito", "in_service": True},
+            {"id": "mexican_mojito", "name": "Mexican Mojito", "in_service": True},
+            {"id": "redbull_mexican_mojito", "name": "Redbull Mexican Mojito", "in_service": True},
         ]},
-        {"id": "mojito_mixes", "name": "Mojito Mixes", "items": [
-            {"id": "mint_mix", "name": "Mint Mix", "in_service": True},
-            {"id": "berry_mix", "name": "Berry Mix", "in_service": True},
+
+        {"id": "mojito_mixes", "name": "Mix Mojito", "items": [
+            {"id": "ultra_silver", "name": "Ultra Silver", "in_service": True},
+            {"id": "ultra_gold", "name": "Ultra Gold", "in_service": True},
+            {"id": "ultra_pink", "name": "Ultra Pink", "in_service": True},
+            {"id": "ultra_blue", "name": "Ultra Blue", "in_service": True},
+            {"id": "ultra_scarlet", "name": "Ultra Scarlet", "in_service": True},
         ]},
+
         {"id": "yogurt", "name": "Yogurt", "items": [
-            {"id": "yogurt_berry", "name": "Berry Yogurt", "in_service": True},
-            {"id": "yogurt_mango", "name": "Mango Yogurt", "in_service": True},
+            {"id": "blueberry_yogurt", "name": "Blueberry Yogurt", "in_service": True},
+            {"id": "passion_fruit_yogurt", "name": "Passion Fruit Yogurt", "in_service": True},
+            {"id": "strawberry_yogurt", "name": "Strawberry Yogurt", "in_service": True},
+            {"id": "ultra_yogurt", "name": "Ultra Yogurt", "in_service": True},
+            {"id": "acai_yogurt", "name": "Acai Yogurt", "in_service": True},
         ]},
-        {"id": "cold_drinks", "name": "Cold Drinks", "items": [
-            {"id": "water", "name": "Water", "in_service": True},
-            {"id": "soft_drink", "name": "Soft Drink", "in_service": True},
-        ]},
+
+        {"id": "cold_drinks", "name": "Cold Drinks", "items": []},
+
         {"id": "smoothie", "name": "Smoothie", "items": [
             {"id": "strawberry_smoothie", "name": "Strawberry Smoothie", "in_service": True},
+            {"id": "blueberry_smoothie", "name": "Blueberry Smoothie", "in_service": True},
+            {"id": "passion_fruit_smoothie", "name": "Passion Fruit Smoothie", "in_service": True},
             {"id": "mango_smoothie", "name": "Mango Smoothie", "in_service": True},
+            {"id": "peach_smoothie", "name": "Peach Smoothie", "in_service": True},
         ]},
     ]
 }
@@ -403,6 +457,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
