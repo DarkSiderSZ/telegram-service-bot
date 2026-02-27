@@ -184,8 +184,26 @@ def build_items_keyboard(cat: Dict[str, Any], allow_toggle: bool) -> InlineKeybo
         label = f"{icon} {item.get('name','Item')}"
         cb = f"{CB_TOGGLE}{cat['id']}:{item['id']}" if allow_toggle else "noop"
         rows.append([InlineKeyboardButton(text=label, callback_data=cb)])
+
+    rows.append([InlineKeyboardButton(text="⬅️ Back", callback_data=CB_BACK)])
+    return InlineKeyboardMarkup(rows)
+
+
 def log_action(user, category_name: str, item_name: str, new_status: bool) -> None:
     os.makedirs(os.path.dirname(AUDIT_FILE), exist_ok=True)
+
+    username = user.username or "no_username"
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+    status_text = "IN" if new_status else "OUT"
+
+    line = (
+        f"{time.strftime('%Y-%m-%d %H:%M:%S')} | "
+        f"{full_name} (@{username}, id:{user.id}) | "
+        f"{category_name} -> {item_name} -> {status_text}\n"
+    )
+
+    with open(AUDIT_FILE, "a", encoding="utf-8") as f:
+        f.write(line)
 
     username = user.username or "no_username"
     full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
@@ -315,11 +333,10 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         for it in cat.get("items", []):
             if it.get("id") == item_id:
-               it["in_service"] = not bool(it.get("in_service"))
-               save_data(data)
-
-               log_action(user, cat.get("name",""), it.get("name",""), it["in_service"])
-               break
+                it["in_service"] = not bool(it.get("in_service"))
+                save_data(data)
+                log_action(user, cat.get("name",""), it.get("name",""), it["in_service"])
+                break
 
         # refresh category screen after toggle (also show lock + remaining)
         icon = category_status_icon(cat.get("items", []))
@@ -381,4 +398,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
