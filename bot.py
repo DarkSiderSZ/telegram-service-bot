@@ -307,7 +307,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-      if d.startswith(CB_TOGGLE):
+    if d.startswith(CB_TOGGLE):
         pin = os.getenv(PIN_ENV, "").strip()
         user = update.effective_user
 
@@ -409,6 +409,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
