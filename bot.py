@@ -227,7 +227,11 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await query.edit_message_text("Category not found.")
             return
         icon = category_status_icon(cat.get("items", []))
-        text = f"{icon} *{cat.get('name','Category')}*"
+        user = update.effective_user
+        locked = not user or not is_unlocked(user.id)
+
+        lock_icon = " 🔒" if locked else ""
+        text = f"{icon} *{cat.get('name','Category')}*{lock_icon}"
         if is_admin(update):
             text += "\nTap an item to toggle."
         await query.edit_message_text(
@@ -289,6 +293,7 @@ def main() -> None:
 if __name__ == "__main__":
 
     main()
+
 
 
 
