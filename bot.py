@@ -13,6 +13,7 @@ from telegram.ext import (
 
 # ========== CONFIG ==========
 DATA_FILE = "/data/service_status.json"   # persisted via Railway volume mounted at /data
+AUDIT_FILE = "/data/audit.log"
 
 PIN_ENV = "BOT_PIN"
 AUTH_FILE = "/data/auth.json"
@@ -183,7 +184,21 @@ def build_items_keyboard(cat: Dict[str, Any], allow_toggle: bool) -> InlineKeybo
         label = f"{icon} {item.get('name','Item')}"
         cb = f"{CB_TOGGLE}{cat['id']}:{item['id']}" if allow_toggle else "noop"
         rows.append([InlineKeyboardButton(text=label, callback_data=cb)])
+def log_action(user, category_name: str, item_name: str, new_status: bool) -> None:
+    os.makedirs(os.path.dirname(AUDIT_FILE), exist_ok=True)
 
+    username = user.username or "no_username"
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+    status_text = "IN" if new_status else "OUT"
+
+    line = (
+        f"{time.strftime('%Y-%m-%d %H:%M:%S')} | "
+        f"{full_name} (@{username}, id:{user.id}) | "
+        f"{category_name} -> {item_name} -> {status_text}\n"
+    )
+
+    with open(AUDIT_FILE, "a", encoding="utf-8") as f:
+        f.write(line)
     rows.append([InlineKeyboardButton(text="⬅️ Back", callback_data=CB_BACK)])
     return InlineKeyboardMarkup(rows)
 
@@ -300,9 +315,11 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         for it in cat.get("items", []):
             if it.get("id") == item_id:
-                it["in_service"] = not bool(it.get("in_service"))
-                save_data(data)
-                break
+               it["in_service"] = not bool(it.get("in_service"))
+               save_data(data)
+
+               log_action(user, cat.get("name",""), it.get("name",""), it["in_service"])
+               break
 
         # refresh category screen after toggle (also show lock + remaining)
         icon = category_status_icon(cat.get("items", []))
@@ -317,7 +334,34 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             parse_mode="Markdown",
         )
         return
+async def audit_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not os.path.exists(AUDIT_FILE):
+        await update.message.reply_text("No audit logs yet.")
+        return
 
+    # default = 10 lines
+    limit = 10
+    if context.args:
+        try:
+            limit = max(1, min(100, int(context.args[0])))
+        except ValueError:
+            pass
+
+    with open(AUDIT_FILE, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    if not lines:
+        await update.message.reply_text("No audit logs yet.")
+        return
+
+    last_lines = lines[-limit:]
+    text = "".join(last_lines)
+
+    # Telegram max message length safety
+    if len(text) > 4000:
+        text = text[-4000:]
+
+    await update.message.reply_text(f"📜 Last {len(last_lines)} changes:\n\n{text}")
 def main() -> None:
     token = os.getenv("BOT_TOKEN")
     if not token:
@@ -329,6 +373,7 @@ def main() -> None:
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("unlock", unlock_cmd))
     app.add_handler(CommandHandler("lock", lock_cmd))
+    app.add_handler(CommandHandler("audit", audit_cmd))
     app.add_handler(CallbackQueryHandler(on_button))
 
     print("Bot running... Ctrl+C to stop.")
@@ -336,3 +381,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
