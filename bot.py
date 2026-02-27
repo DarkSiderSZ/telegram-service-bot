@@ -276,6 +276,23 @@ def log_action(user, category_name: str, item_name: str, new_status: bool) -> No
     return InlineKeyboardMarkup(rows)
 
 # ========== COMMANDS ==========
+async def reset_menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    pin = os.getenv(PIN_ENV, "").strip()
+    if not pin:
+        await update.message.reply_text("PIN not set on server.")
+        return
+
+    if not context.args:
+        await update.message.reply_text("Use: /resetmenu <PIN>")
+        return
+
+    if context.args[0].strip() != pin:
+        await update.message.reply_text("Wrong PIN ❌")
+        return
+
+    save_data(DEFAULT_DATA)
+    await update.message.reply_text("Menu reset ✅")
+    
 async def unlock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     pin = os.getenv(PIN_ENV, "").strip()
     if not pin:
@@ -454,6 +471,7 @@ def main() -> None:
     app.add_handler(CommandHandler("unlock", unlock_cmd))
     app.add_handler(CommandHandler("lock", lock_cmd))
     app.add_handler(CommandHandler("audit", audit_cmd))
+    app.add_handler(CommandHandler("resetmenu", reset_menu_cmd))
     app.add_handler(CallbackQueryHandler(on_button))
 
     print("Bot running... Ctrl+C to stop.")
@@ -461,6 +479,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
