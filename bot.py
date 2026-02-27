@@ -381,7 +381,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    if d.startswith(CB_TOGGLE):
+        if d.startswith(CB_TOGGLE):
         pin = os.getenv(PIN_ENV, "").strip()
         user = update.effective_user
 
@@ -393,47 +393,52 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await query.answer("Locked. Use /unlock <PIN> to edit.", show_alert=True)
             return
 
-        payload = d[len(CB_TOGGLE):]  # <cat_id>:<item_id>
-        if ":" not in payload:
+        payload = d[len(CB_TOGGLE):]  # <cat_id>:<item_id>[:rev]
+        parts = payload.split(":")
+        if len(parts) < 2:
             await query.answer("Bad data.", show_alert=True)
             return
-        parts = payload.split(":")
+
         cat_id = parts[0]
-        item_id = parts[1] if len(parts) > 1 else ""
-        # parts[2] is status, we ignore it
+        item_id = parts[1]
 
         cat = find_category(data, cat_id)
         if not cat:
             await query.answer("Category not found.", show_alert=True)
             return
 
-        changed = False
+        # Toggle item
+        target = None
         for it in cat.get("items", []):
             if it.get("id") == item_id:
-                it["in_service"] = not bool(it.get("in_service"))
-                data["_rev"] = int(data.get("_rev", 0)) + 1
-                save_data(data)
-                log_action(user, cat.get("name", ""), it.get("name", ""), it["in_service"])
-                changed = True
+                target = it
                 break
-        await query.answer("Updated ✅")
 
-        if not changed:
+        if not target:
             await query.answer("Item not found.", show_alert=True)
             return
 
-        # Refresh same category view immediately
+        target["in_service"] = not bool(target.get("in_service"))
+
+        # bump revision so keyboard callback_data changes (forces Telegram redraw)
+        data["_rev"] = int(data.get("_rev", 0)) + 1
+
+        save_data(data)
+        log_action(user, cat.get("name", ""), target.get("name", ""), target["in_service"])
+
+        # Render same category view again (fast + reliable refresh)
         icon = category_status_icon(cat.get("items", []))
         until_ts = cleanup_and_get_until(user.id)
         rem = format_remaining(until_ts)
         remaining_line = f"\n🕒 {rem} remaining" if rem else ""
-        text = f"{icon} *{cat.get('name','Category')}*{remaining_line}{zws_bump(data)}"
 
-        await query.delete_message()
+        text = f"{icon} *{cat.get('name','Category')}*{remaining_line}"
 
-        await query.message.chat.send_message(
+        rev = int(data.get("_rev", 0))
+
+        await query.edit_message_text(
             text=text,
-            reply_markup=build_items_keyboard(cat, allow_toggle=True),
+            reply_markup=build_items_keyboard(cat, allow_toggle=True, rev=rev),
             parse_mode="Markdown",
         )
         return
@@ -485,6 +490,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
