@@ -32,7 +32,6 @@ CB_TOGGLE = "tog:"    # tog:<category_id>:<item_id>
 # ========== DEFAULT DATA ==========
 DEFAULT_DATA = {
     "categories": [
-        {"id": "deserts", "name": "Deserts", "items": []},
 
         {"id": "speciality_coffee", "name": "Speciality Coffee", "items": [
             {"id": "v60", "name": "V60", "in_service": True},
@@ -129,7 +128,6 @@ DEFAULT_DATA = {
             {"id": "acai_yogurt", "name": "Acai Yogurt", "in_service": True},
         ]},
 
-        {"id": "cold_drinks", "name": "Cold Drinks", "items": []},
 
         {"id": "smoothie", "name": "Smoothie", "items": [
             {"id": "strawberry_smoothie", "name": "Strawberry Smoothie", "in_service": True},
@@ -413,6 +411,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 log_action(user, cat.get("name", ""), it.get("name", ""), it["in_service"])
                 changed = True
                 break
+        await query.answer("Updated ✅")
 
         if not changed:
             await query.answer("Item not found.", show_alert=True)
@@ -479,6 +478,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 
